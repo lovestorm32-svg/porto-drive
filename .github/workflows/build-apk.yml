@@ -7,17 +7,20 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
-    name: Build Android Release APK and AAB
-    runs-on: ubuntu-22.04
-    
+    name: Build Signed Android APK and AAB
+    runs-on: ubuntu-latest
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
     - name: Set up Node.js Environment
-      uses: actions/setup-node@v5
+      uses: actions/setup-node@v4
       with:
         node-version: 22
         cache: 'npm'
@@ -42,29 +45,49 @@ jobs:
         cd android
         chmod +x ./gradlew
 
-    - name: Build Android Release APK
+    - name: Build Signed Android Release and Debug APKs
       run: |
         cd android
-        ./gradlew assembleRelease --stacktrace
+        ./gradlew assembleRelease assembleDebug bundleRelease --stacktrace
 
-    - name: Build Android App Bundle (AAB for Google Play Store)
+    - name: Prepare Release Artifacts
       run: |
-        cd android
-        ./gradlew bundleRelease --stacktrace
+        mkdir -p dist-binaries
+        # Find and copy release APK (signed via debug config)
+        cp $(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1) dist-binaries/porto-drive-release.apk
+        # Copy debug APK
+        cp $(find android/app/build/outputs/apk/debug/ -name "*.apk" | head -n 1) dist-binaries/porto-drive-debug.apk
+        # Copy release AAB
+        cp $(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1) dist-binaries/porto-drive-release.aab
+        ls -lh dist-binaries/
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
-      
-  
-    
       with:
         name: PortoDrive-Release-APK
-        path: android/app/build/outputs/apk/release/*.apk
+        path: dist-binaries/porto-drive-release.apk
+        retention-days: 14
+
+    - name: Upload Debug APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PortoDrive-Debug-APK
+        path: dist-binaries/porto-drive-debug.apk
         retention-days: 14
 
     - name: Upload AAB Artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
         name: PortoDrive-GooglePlay-AAB
-        path: android/app/build/outputs/bundle/release/*.aab
+        path: dist-binaries/porto-drive-release.aab
         retention-days: 14
+
+    - name: Publish to GitHub Releases
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload v1.0.0 dist-binaries/* --clobber || \
+        gh release create v1.0.0 dist-binaries/* \
+          --title "Porto Drive v1.0.0 (Official Release APK)" \
+          --notes "تطبيق بورتو درايف - Porto Drive للأندرويد. جاهز للتحميل والتثبيت المباشر على الهاتف بدون قيود."
