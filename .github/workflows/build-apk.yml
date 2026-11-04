@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-java@v5
 
     - name: Set up Node.js Environment
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: 22
         cache: 'npm'
@@ -53,14 +53,14 @@ jobs:
         ./gradlew bundleRelease --stacktrace
 
     - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: PortoDrive-Release-APK
         path: android/app/build/outputs/apk/release/*.apk
         retention-days: 14
 
     - name: Upload AAB Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: PortoDrive-GooglePlay-AAB
         path: android/app/build/outputs/bundle/release/*.aab
