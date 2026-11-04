@@ -53,7 +53,7 @@ jobs:
         ./gradlew bundleRelease --stacktrace
 
     - name: Upload APK Artifact
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v17
       
   
     
