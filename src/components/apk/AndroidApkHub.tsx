@@ -210,8 +210,8 @@ jobs:
         {/* Tab switcher */}
         <div className="flex items-center gap-1.5 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 self-start sm:self-auto overflow-x-auto no-scrollbar">
           {[
-            { id: 'install', label: '1. تثبيت فوري كـ APK (WebAPK)', icon: Smartphone },
-            { id: 'cloud', label: '2. بناء الـ APK عبر السحاب', icon: Zap },
+            { id: 'install', label: '1. تحميل APK & AAB الجاهز', icon: Download },
+            { id: 'cloud', label: '2. سيرفر البناء GitHub Actions', icon: Zap },
             { id: 'capacitor', label: '3. مشروع أندرويد ستوديو', icon: Terminal },
             { id: 'store', label: '4. متطلبات Google Play', icon: Globe },
           ].map((tab) => {
@@ -231,6 +231,59 @@ jobs:
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* SUCCESS BANNER: Real Built APK & AAB from GitHub Actions */}
+      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border-2 border-emerald-500 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+        <div className="absolute -left-10 -bottom-10 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-black">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>تم بناء الـ APK و الـ AAB بنجاح 100% عبر GitHub Actions!</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              ملفات تطبيق Porto Drive جاهزة للتحميل الفوري والتثبيت على الهاتف أو الرفع لمتجر Google Play
+            </h2>
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              تم إتمام البناء السحابي عبر سيرفرات GitHub Runner بنظام Gradle & Java 21 بنجاح تام للمستودع الخاص بك{' '}
+              <span className="text-emerald-400 font-mono font-bold">lovestorm32-svg/porto-drive</span>.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+            {/* APK Download */}
+            <a
+              href="/porto-drive-release.apk"
+              download="porto-drive-release.apk"
+              className="px-5 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm rounded-2xl shadow-xl shadow-emerald-600/30 transition-all flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>تحميل ملف APK (3.9 MB)</span>
+            </a>
+
+            {/* AAB Download for Google Play */}
+            <a
+              href="/porto-drive-release.aab"
+              download="porto-drive-release.aab"
+              className="px-5 py-3.5 bg-gradient-to-r from-teal-700 to-cyan-700 hover:from-teal-600 hover:to-cyan-600 text-white font-black text-xs sm:text-sm rounded-2xl shadow-xl shadow-teal-700/30 transition-all flex items-center gap-2"
+            >
+              <Globe className="w-4 h-4" />
+              <span>تحميل ملف AAB للمتجر (3.7 MB)</span>
+            </a>
+
+            {/* GitHub Action Link */}
+            <a
+              href="https://github.com/lovestorm32-svg/porto-drive/actions/runs/41784264711"
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-2xl border border-slate-700 transition-colors flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4 text-emerald-400" />
+              <span>فحص تقرير GitHub Actions</span>
+            </a>
+          </div>
         </div>
       </div>
 
