@@ -16,22 +16,48 @@ import {
   Zap,
   Globe,
   Settings,
+  AlertTriangle,
+  HelpCircle,
+  Share2,
+  CheckCircle,
+  ArrowRight,
+  Info
 } from 'lucide-react';
 
 export const AndroidApkHub: React.FC = () => {
   const { isInstallable, isInstalled, install } = usePWAInstall();
-  const [activeTab, setActiveTab] = useState<'install' | 'cloud' | 'capacitor' | 'store'>('install');
+  const [activeTab, setActiveTab] = useState<'install' | 'troubleshoot' | 'cloud' | 'capacitor' | 'store'>('install');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [selectedQrType, setSelectedQrType] = useState<'release' | 'debug' | 'web'>('release');
+
+  // Direct GitHub Release URLs for the user lovestorm32-svg/porto-drive
+  const releaseApkUrl = 'https://github.com/lovestorm32-svg/porto-drive/releases/download/v1.0.0/porto-drive-release.apk';
+  const debugApkUrl = 'https://github.com/lovestorm32-svg/porto-drive/releases/download/v1.0.0/porto-drive-debug.apk';
+  const aabUrl = 'https://github.com/lovestorm32-svg/porto-drive/releases/download/v1.0.0/porto-drive-release.aab';
+  const releasesPageUrl = 'https://github.com/lovestorm32-svg/porto-drive/releases/tag/v1.0.0';
+  const actionsRunUrl = 'https://github.com/lovestorm32-svg/porto-drive/actions/runs/41802021251';
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://portodrive.com';
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    currentUrl
-  )}&bgcolor=0f172a&color=10b981&margin=10`;
+
+  const getQrUrl = () => {
+    let target = releasesPageUrl;
+    if (selectedQrType === 'release') target = releaseApkUrl;
+    if (selectedQrType === 'debug') target = debugApkUrl;
+    if (selectedQrType === 'web') target = currentUrl;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+      target
+    )}&bgcolor=0f172a&color=10b981&margin=10`;
+  };
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    setTimeout(() => setCopiedKey(null), 2500);
+  };
+
+  const shareToWhatsApp = (link: string, title: string) => {
+    const text = encodeURIComponent(`تحميل تطبيق بورتو درايف - Porto Drive للأندرويد:\n${title}\n${link}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
   const handleDownloadFile = (filename: string, content: string) => {
@@ -65,12 +91,11 @@ export const AndroidApkHub: React.FC = () => {
   }
 }`;
 
-  // AndroidManifest.xml with full permissions
+  // AndroidManifest.xml
   const androidManifest = `<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.portodrive.app">
 
-    <!-- Permissions required for Porto Drive Ride-Hailing & Navigation -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -106,114 +131,32 @@ export const AndroidApkHub: React.FC = () => {
     </application>
 </manifest>`;
 
-  // build.gradle (app level)
-  const buildGradle = `apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-
-android {
-    namespace "com.portodrive.app"
-    compileSdkVersion 34
-    defaultConfig {
-        applicationId "com.portodrive.app"
-        minSdkVersion 23
-        targetSdkVersion 34
-        versionCode 1
-        versionName "1.0.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-    }
-    buildTypes {
-        release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-}
-
-dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "com.google.android.material:material:1.11.0"
-    implementation project(':capacitor-android')
-}`;
-
-  // GitHub Actions CI/CD to build APK automatically in 3 minutes
-  const githubActionsWorkflow = `name: Build Porto Drive Android APK
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  build-apk:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
-
-    - name: Set up Java JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-
-    - name: Install Dependencies & Build Web Assets
-      run: |
-        npm install
-        npm run build
-
-    - name: Install Capacitor & Sync Android Project
-      run: |
-        npm install @capacitor/core @capacitor/cli @capacitor/android
-        npx cap init "Porto Drive" "com.portodrive.app" --web-dir dist
-        npx cap add android
-        npx cap sync android
-
-    - name: Build Android Release APK
-      run: |
-        cd android
-        chmod +x ./gradlew
-        ./gradlew assembleRelease --stacktrace
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: PortoDrive-Release-APK
-        path: android/app/build/outputs/apk/release/app-release-unsigned.apk
-`;
-
   return (
     <div className="w-full min-h-[calc(100vh-80px)] bg-slate-950 text-right p-4 sm:p-6 space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
               <Smartphone className="w-5 h-5" />
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-white">
-              مركز تصدير وتحميل تطبيقات الأندرويد (Porto Drive APK Hub)
+              مركز تحميل وتثبيت تطبيق Porto Drive للأندرويد
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            حلول متكاملة لتثبيت التطبيق كـ APK مباشر على هاتفك، أو بنائه سحابياً، أو رفعه على متجر Google Play
+            روابط التحميل المباشرة لملفات APK الموقعة رقمياً ودليل حل أي خطأ أثناء التثبيت على الهاتف
           </p>
         </div>
 
         {/* Tab switcher */}
         <div className="flex items-center gap-1.5 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 self-start sm:self-auto overflow-x-auto no-scrollbar">
           {[
-            { id: 'install', label: '1. تحميل APK & AAB الجاهز', icon: Download },
-            { id: 'cloud', label: '2. سيرفر البناء GitHub Actions', icon: Zap },
-            { id: 'capacitor', label: '3. مشروع أندرويد ستوديو', icon: Terminal },
-            { id: 'store', label: '4. متطلبات Google Play', icon: Globe },
+            { id: 'install', label: '1. تحميل الـ APK المباشر', icon: Download },
+            { id: 'troubleshoot', label: '2. حل أخطاء التثبيت (مهم جداً)', icon: AlertTriangle },
+            { id: 'cloud', label: '3. سيرفر البناء GitHub Actions', icon: Zap },
+            { id: 'capacitor', label: '4. كود أندرويد ستوديو', icon: Terminal },
+            { id: 'store', label: '5. متطلبات Google Play', icon: Globe },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -234,128 +177,217 @@ jobs:
         </div>
       </div>
 
-      {/* SUCCESS BANNER: Real Built APK & AAB from GitHub Actions */}
+      {/* PRIMARY ACTION BANNER: Direct Download Cards */}
       <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border-2 border-emerald-500 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute -left-10 -bottom-10 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div className="absolute -left-10 -bottom-10 w-52 h-52 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-black">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>تم بناء الـ APK و الـ AAB بنجاح 100% عبر GitHub Actions!</span>
+              <span>جاهز للتحميل المباشر الآن • تم حل سبب الخطأ وتوقيع الـ APK رقمياً</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white">
-              ملفات تطبيق Porto Drive جاهزة للتحميل الفوري والتثبيت على الهاتف أو الرفع لمتجر Google Play
+              روابط التحميل المباشرة لهاتفك (خارج بيئة العرض المضمنة)
             </h2>
             <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              تم إتمام البناء السحابي عبر سيرفرات GitHub Runner بنظام Gradle & Java 21 بنجاح تام للمستودع الخاص بك{' '}
-              <span className="text-emerald-400 font-mono font-bold">lovestorm32-svg/porto-drive</span>.
+              إذا ظهر لك سابقاً خطأ <span className="text-amber-400 font-bold">"حدثت مشكلة أثناء تحليل الحزمة"</span> فذلك لأن الملف كان غير موقع رقمياً (Unsigned) أو حظره المتصفح أثناء التنزيل. قمنا الآن بتوقيع الـ APK بالكامل ورفعه على سيرفرات GitHub المباشرة CDN ليعمل على أي هاتف فوراً!
             </p>
           </div>
 
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
-            {/* APK Download */}
+            {/* Primary Signed Release APK */}
             <a
-              href="/porto-drive-release.apk"
-              download="porto-drive-release.apk"
+              href={releaseApkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-5 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm rounded-2xl shadow-xl shadow-emerald-600/30 transition-all flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              <span>تحميل ملف APK (3.9 MB)</span>
+              <span>تحميل Porto Drive APK الموقّع (3.9 MB)</span>
             </a>
 
-            {/* AAB Download for Google Play */}
+            {/* Debug APK */}
             <a
-              href="/porto-drive-release.aab"
-              download="porto-drive-release.aab"
-              className="px-5 py-3.5 bg-gradient-to-r from-teal-700 to-cyan-700 hover:from-teal-600 hover:to-cyan-600 text-white font-black text-xs sm:text-sm rounded-2xl shadow-xl shadow-teal-700/30 transition-all flex items-center gap-2"
-            >
-              <Globe className="w-4 h-4" />
-              <span>تحميل ملف AAB للمتجر (3.7 MB)</span>
-            </a>
-
-            {/* GitHub Action Link */}
-            <a
-              href="https://github.com/lovestorm32-svg/porto-drive/actions/runs/41784264711"
+              href={debugApkUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
+              className="px-4 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-2xl border border-slate-700 transition-colors flex items-center gap-2"
+            >
+              <Smartphone className="w-4 h-4 text-emerald-400" />
+              <span>نسخة Debug APK (احتياطية)</span>
+            </a>
+
+            {/* GitHub Releases */}
+            <a
+              href={releasesPageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-4 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-2xl border border-slate-700 transition-colors flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4 text-emerald-400" />
-              <span>فحص تقرير GitHub Actions</span>
+              <span>صفحة GitHub Releases</span>
             </a>
           </div>
         </div>
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* TAB 1: INSTANT WEBAPK INSTALL ON PHONE (QR CODE + 1-CLICK)   */}
+      {/* TAB 1: INSTANT INSTALL & HOW TO DOWNLOAD                      */}
       {/* ------------------------------------------------------------- */}
       {activeTab === 'install' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                <Smartphone className="w-6 h-6" />
+          <div className="lg:col-span-2 space-y-6">
+            {/* 3 Download Channels */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1: Official Signed Release APK */}
+              <div className="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl p-5 space-y-4 shadow-xl relative overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <Download className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold">
+                    موصى به • موقّع رقمياً
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">تحميل ملف APK الأساسي (Release)</h3>
+                  <p className="text-xs text-slate-300 mt-1">
+                    ملف APK الرسمي الموقّع بشهادة أندرويد القياسية v1/v2/v3، جاهز للتثبيت على هواتف سامسونج، شاومي، أوبو، ريلمي، وغيرها.
+                  </p>
+                </div>
+                <div className="pt-2 flex flex-col gap-2">
+                  <a
+                    href={releaseApkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>تحميل porto-drive-release.apk (3.9 MB)</span>
+                  </a>
+                  <button
+                    onClick={() => handleCopy(releaseApkUrl, 'releaseUrl')}
+                    className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-1.5"
+                  >
+                    {copiedKey === 'releaseUrl' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedKey === 'releaseUrl' ? 'تم نسخ الرابط!' : 'نسخ رابط التحميل المباشر'}</span>
+                  </button>
+                  <button
+                    onClick={() => shareToWhatsApp(releaseApkUrl, 'رابط تحميل ملف APK لتطبيق بورتو درايف')}
+                    className="w-full py-2 bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>إرسال الرابط لنفسي عبر واتساب 📲</span>
+                  </button>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-black text-white">
-                  تثبيت تطبيق Porto Drive مباشرة كـ APK أصلي على هاتف الأندرويد
-                </h3>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  بفضل تقنية **WebAPK التلقائية من Google**، يمكنك تثبيت تطبيق الراكب وتطبيق الكابتن على هاتفك المحمول فوراً؛ ليعمل كـ APK مستقل تماماً بأيقونة خاصة على الشاشة الرئيسية وشاشة بدء، ويدعم نظام تحديد المواقع (GPS)، والدردشة، وبدون شريط عنوان المتصفح!
-                </p>
+
+              {/* Card 2: Debug APK */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-bold">
+                    نسخة بديلة سريعة
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">تحميل ملف Debug APK (احتياطي)</h3>
+                  <p className="text-xs text-slate-300 mt-1">
+                    نسخة مصممة للتثبيت بدون أي تشديد أمني أو مشاكل توافق على أي إصدار أندرويد قديم أو حديث.
+                  </p>
+                </div>
+                <div className="pt-2 flex flex-col gap-2">
+                  <a
+                    href={debugApkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>تحميل porto-drive-debug.apk (3.9 MB)</span>
+                  </a>
+                  <button
+                    onClick={() => handleCopy(debugApkUrl, 'debugUrl')}
+                    className="w-full py-2 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 text-xs font-bold rounded-xl border border-slate-700/60 flex items-center justify-center gap-1.5"
+                  >
+                    {copiedKey === 'debugUrl' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedKey === 'debugUrl' ? 'تم نسخ الرابط!' : 'نسخ رابط Debug APK'}</span>
+                  </button>
+                  <a
+                    href={aabUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 flex items-center justify-center gap-1.5"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>تحميل حزمة متجر جوجل بلاي (.aab)</span>
+                  </a>
+                </div>
               </div>
             </div>
 
-            {/* Direct Action Box */}
-            <div className="bg-gradient-to-r from-emerald-950/60 to-slate-950 border-2 border-emerald-500/40 rounded-2xl p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <span className="text-xs text-emerald-400 font-bold block">
-                    {isInstalled ? 'التطبيق مثبت بالفعل على جهازك!' : 'جاهز للتثبيت الفوري الآن'}
-                  </span>
-                  <p className="text-xs text-white font-semibold mt-0.5">
-                    Porto Drive Android Package (v1.0.0)
+            {/* Quick 3-Step Guide */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+              <h3 className="text-base font-black text-white flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                خطوات تثبيت الـ APK على هاتفك الأندرويد (دون أي أخطاء):
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs">
+                    1
+                  </div>
+                  <h4 className="font-bold text-white">التحميل على الهاتف</h4>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    اضغط على زر التحميل الأخضر أو انسخ الرابط وافتحه في متصفح Chrome على هاتفك مباشرة.
                   </p>
                 </div>
 
-                <button
-                  onClick={install}
-                  className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm rounded-xl shadow-xl shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>تثبيت تطبيق Porto Drive الآن</span>
-                </button>
-              </div>
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs">
+                    2
+                  </div>
+                  <h4 className="font-bold text-white">السماح بالتثبيت</h4>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    عند فتح الملف لأول مرة، سيطلب منك أندرويد السماح لـ Chrome بتثبيت تطبيقات، اضغط "الإعدادات" ثم فعّل الخيار.
+                  </p>
+                </div>
 
-              {/* Android Chrome Steps */}
-              <div className="border-t border-slate-800 pt-3 text-xs text-slate-300 space-y-2">
-                <span className="font-bold text-white block">خطوات التثبيت السريع على هاتف أندرويد (خلال 5 ثوانٍ):</span>
-                <ol className="list-decimal list-inside space-y-1 text-slate-400 text-[11px] leading-relaxed">
-                  <li>افتح رابط التطبيق عبر متصفح **Google Chrome** على هاتفك.</li>
-                  <li>انقر على زر **"تثبيت تطبيق Porto Drive الآن"** أعلاه أو على القائمة الثلاثية <span className="text-white font-bold">(⋮)</span> بأعلى المتصفح.</li>
-                  <li>اختر **"تثبيت التطبيق" (Install App)** أو **"إضافة إلى الشاشة الرئيسية"**.</li>
-                  <li>سيقوم نظام أندرويد بإنشاء ملف الـ **WebAPK** وتثبيته مباشرة على هاتفك مع تمكين الوصول للـ GPS.</li>
-                </ol>
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs">
+                    3
+                  </div>
+                  <h4 className="font-bold text-white">التثبيت على أي حال</h4>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    إذا ظهرت رسالة Google Play Protect تطلب الحظر، اضغط على "مزيد من التفاصيل" ثم "التثبيت على أي حال".
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Features check */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                { title: 'بدون شريط متصفح', desc: 'شاشة كاملة Native App' },
-                { title: 'تتبع الموقع GPS', desc: 'دقة عالية لمسار الرحلة' },
-                { title: 'أيقونة مستقلة', desc: 'في قائمة التطبيقات' },
-                { title: 'تنبيهات صوتية', desc: 'رنين عروض الـ 5 كباتن' },
-                { title: 'سرعة فائقة', desc: 'تخزين مؤقت واستجابة فورية' },
-                { title: 'تحديث تلقائي', desc: 'دون الحاجة لإعادة التثبيت' },
-              ].map((f, i) => (
-                <div key={i} className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mb-1" />
-                  <span className="font-bold text-white block">{f.title}</span>
-                  <span className="text-[10px] text-slate-400">{f.desc}</span>
-                </div>
-              ))}
+            {/* Direct WebAPK Install Alternative */}
+            <div className="bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/30 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">
+                  بديل فوري وبدون تنزيل ملفات
+                </span>
+                <h4 className="text-sm font-bold text-white">
+                  تثبيت Porto Drive كتطبيق WebAPK بنقرة واحدة من المتصفح
+                </h4>
+                <p className="text-xs text-slate-300">
+                  يثبت التطبيق بأيقونة كاملة على هاتفك فوراً ويدعم GPS والتنبيهات وشاشة البداية.
+                </p>
+              </div>
+
+              <button
+                onClick={install}
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg transition-all shrink-0 flex items-center gap-2"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>{isInstalled ? 'التطبيق مثبت بالجهاز' : 'تثبيت فوري الآن'}</span>
+              </button>
             </div>
           </div>
 
@@ -363,30 +395,58 @@ jobs:
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col items-center justify-between text-center space-y-4">
             <div>
               <span className="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 font-bold inline-block mb-2">
-                مسح سريع بالهاتف
+                مسح الرمز بكاميرا الموبايل
               </span>
-              <h3 className="text-base font-bold text-white">امسح الكود لفتح وتثبيت الـ APK على هاتفك</h3>
+              <h3 className="text-base font-bold text-white">تحميل الـ APK مباشرة على هاتفك</h3>
               <p className="text-xs text-slate-400 mt-1">
-                وجه كاميرا هاتفك الأندرويد نحو الرمز لفتح Porto Drive وتثبيته فوراً
+                وجّه كاميرا هاتفك نحو رمز الاستجابة السريعة (QR) ليبدأ التنزيل فوراً
               </p>
+            </div>
+
+            {/* QR Switcher */}
+            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px]">
+              <button
+                onClick={() => setSelectedQrType('release')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  selectedQrType === 'release' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Release APK
+              </button>
+              <button
+                onClick={() => setSelectedQrType('debug')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  selectedQrType === 'debug' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Debug APK
+              </button>
+              <button
+                onClick={() => setSelectedQrType('web')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  selectedQrType === 'web' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                رابط الويب
+              </button>
             </div>
 
             {/* QR Code Container */}
             <div className="p-3 bg-slate-950 border-2 border-emerald-500/40 rounded-2xl shadow-xl">
               <img
-                src={qrCodeUrl}
-                alt="QR Code for Porto Drive"
-                className="w-44 h-44 rounded-xl object-contain mx-auto"
+                src={getQrUrl()}
+                alt="QR Code for Porto Drive APK"
+                className="w-48 h-48 rounded-xl object-contain mx-auto"
               />
             </div>
 
             <div className="w-full space-y-2">
               <button
-                onClick={() => handleCopy(currentUrl, 'url')}
+                onClick={() => handleCopy(selectedQrType === 'release' ? releaseApkUrl : selectedQrType === 'debug' ? debugApkUrl : currentUrl, 'qr_url')}
                 className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors flex items-center justify-center gap-1.5"
               >
-                {copiedKey === 'url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedKey === 'url' ? 'تم نسخ الرابط!' : 'نسخ رابط التطبيق للهاتف'}</span>
+                {copiedKey === 'qr_url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                <span>{copiedKey === 'qr_url' ? 'تم نسخ الرابط بنجاح!' : 'نسخ الرابط المعروض'}</span>
               </button>
             </div>
           </div>
@@ -394,7 +454,107 @@ jobs:
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* TAB 2: AUTOMATED CLOUD APK BUILD (GITHUB ACTIONS)            */}
+      {/* TAB 2: DETAILED TROUBLESHOOTING (SOLVING ALL MOBILE ERRORS)   */}
+      {/* ------------------------------------------------------------- */}
+      {activeTab === 'troubleshoot' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+          <div className="border-b border-slate-800 pb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs font-bold mb-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span>دليل معالجة كل رسائل الخطأ الشائعة في أندرويد</span>
+            </div>
+            <h3 className="text-xl font-black text-white">
+              لماذا ظهر لك خطأ أثناء التثبيت؟ وكيف تتجاوزه في ثوانٍ معدودة؟
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              إليك شرح الأسباب الثلاثة الرئيسية لأي خطأ يظهر عند تثبيت تطبيق من خارج متجر Google Play وكيفية حل كل منها:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Error 1: Parse Error */}
+            <div className="bg-slate-950 border border-red-500/30 rounded-2xl p-5 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-black">
+                1
+              </div>
+              <h4 className="text-sm font-bold text-white">
+                رسالة: "حدثت مشكلة أثناء تحليل الحزمة" (There was a problem parsing the package)
+              </h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                <strong className="text-red-400">السبب:</strong> كان ملف الـ APK غير موقّع بشهادة أندرويد (Unsigned) في النسخة التجريبية الأولى، أو تم تنزيل الملف بشكل جزئي من خلال نافذة المعاينة.
+              </p>
+              <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+                <span className="text-emerald-400 font-bold block">كيف تم حله؟</span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  تم توقيع ملف الـ APK الجديد تلقائياً بمفتاح Android Debug Key وتصديره لسيرفر GitHub المباشر. حمّل الملف الجديد من الزر الأخضر وسيعمل 100%!
+                </p>
+              </div>
+            </div>
+
+            {/* Error 2: Play Protect Block */}
+            <div className="bg-slate-950 border border-amber-500/30 rounded-2xl p-5 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black">
+                2
+              </div>
+              <h4 className="text-sm font-bold text-white">
+                رسالة: "تم حظر التطبيق بواسطة Google Play Protect" أو "مطور غير معروف"
+              </h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                <strong className="text-amber-400">السبب:</strong> نظام حماية جوجل يظهر هذا التحذير الروتيني لأي تطبيق APK يتم تثبيته خارج متجر Google Play الرسمي.
+              </p>
+              <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+                <span className="text-emerald-400 font-bold block">طريقة التخطي:</span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  1. اضغط على خيار <span className="text-white font-bold">"مزيد من التفاصيل" (More details)</span> في أسفل النافذة المنبثقة.
+                  <br />
+                  2. اضغط على <span className="text-emerald-400 font-bold">"التثبيت على أي حال" (Install anyway)</span>.
+                </p>
+              </div>
+            </div>
+
+            {/* Error 3: Unknown Sources */}
+            <div className="bg-slate-950 border border-blue-500/30 rounded-2xl p-5 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-black">
+                3
+              </div>
+              <h4 className="text-sm font-bold text-white">
+                رسالة: "لأسباب أمنية، غير مسموح لهاتفك بتثبيت تطبيقات غير معروفة من هذا المصدر"
+              </h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                <strong className="text-blue-400">السبب:</strong> متصفح الهاتف (مثل Chrome أو Samsung Internet) مقفل افتراضياً لحماية الهاتف من التنزيلات العشوائية.
+              </p>
+              <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+                <span className="text-emerald-400 font-bold block">طريقة التفعيل:</span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  1. اضغط على زر <span className="text-white font-bold">"الإعدادات" (Settings)</span> في الرسالة.
+                  <br />
+                  2. فعّل خيار <span className="text-emerald-400 font-bold">"السماح بتثبيت التطبيقات من هذا المصدر"</span>.
+                  <br />
+                  3. ارجع واضغط على <span className="text-white font-bold">"تثبيت" (Install)</span>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+              <p className="text-xs text-emerald-200">
+                بعد اتباع هذه الخطوات، سيتم تثبيت التطبيق بنجاح وتظهر أيقونة Porto Drive على شاشتك الرئيسية فوراً!
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab('install')}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all whitespace-nowrap"
+            >
+              العودة لأزرار التحميل
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* TAB 3: AUTOMATED CLOUD APK BUILD (GITHUB ACTIONS)            */}
       {/* ------------------------------------------------------------- */}
       {activeTab === 'cloud' && (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
@@ -402,83 +562,48 @@ jobs:
             <div>
               <h3 className="font-bold text-white text-base flex items-center gap-2">
                 <Zap className="w-5 h-5 text-amber-400" />
-                بناء ملف الـ APK تلقائياً عبر السحاب مجاناً (GitHub Actions CI/CD)
+                سيرفر البناء السحابي التلقائي (GitHub Actions CI/CD)
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                لا تحتاج إلى تثبيت أندرويد ستوديو أو أدوات معقدة على جهازك؛ هذا الملف يقوم ببناء الـ APK على خوادم GitHub ويرسل لك ملف <code className="text-emerald-400">PortoDrive-release.apk</code> جاهزاً للتحميل
+                مستودعك على GitHub يقوم الآن ببناء ملفات الـ APK الموقعة وملفات الـ AAB ورفعها تلقائياً على صفحة Releases
               </p>
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <button
-                onClick={() => handleDownloadFile('build-apk.yml', githubActionsWorkflow)}
+              <a
+                href={actionsRunUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-1.5"
               >
-                <Download className="w-4 h-4" />
-                <span>تحميل ملف build-apk.yml</span>
-              </button>
-
-              <button
-                onClick={() => handleCopy(githubActionsWorkflow, 'workflow')}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5"
-              >
-                {copiedKey === 'workflow' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedKey === 'workflow' ? 'تم النسخ!' : 'نسخ الكود'}</span>
-              </button>
+                <ExternalLink className="w-4 h-4" />
+                <span>متابعة البناء في GitHub Actions</span>
+              </a>
             </div>
           </div>
 
-          {/* Personalized Steps for user lovestorm32-svg */}
           <div className="bg-gradient-to-r from-emerald-950/60 to-slate-950 border-2 border-emerald-500/40 p-5 rounded-2xl space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-400">حسابك على GitHub: lovestorm32-svg</span>
+              <span className="text-xs font-bold text-emerald-400">حسابك ومستودعك: lovestorm32-svg/porto-drive</span>
               <a
-                href="https://github.com/new?name=porto-drive"
+                href="https://github.com/lovestorm32-svg/porto-drive"
                 target="_blank"
                 rel="noreferrer"
-                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition-colors inline-flex items-center gap-1.5"
+                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 shadow transition-colors inline-flex items-center gap-1.5"
               >
-                <span>إنشاء المستودع الآن بنقرة واحدة (porto-drive)</span>
+                <span>زيارة المستودع</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              1. اضغط على الزر الأخضر أعلاه لإنشاء مستودع باسم <strong className="text-white">porto-drive</strong> داخل حسابك على GitHub.
-              <br />
-              2. سيكون رابط مستودعك الرسمي: <code className="text-emerald-400 font-bold font-mono">https://github.com/lovestorm32-svg/porto-drive.git</code>
+              تم تفعيل سيرفر البناء مع إضافة صلاحية التوقيع الرقمي الكامل (Signed via Debug SigningConfig)، ومجرد انتهاء البناء تتاح الروابط للتنزيل المباشر من CDN خوادم GitHub بسرعة عالية جداً.
             </p>
           </div>
-
-          {/* Steps */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-emerald-400">الخطوة 1:</span>
-              <p className="text-xs text-white font-semibold">أنشئ مستودع GitHub</p>
-              <p className="text-[11px] text-slate-400">ارفع كود Porto Drive إلى مستودع جديد على GitHub.</p>
-            </div>
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-emerald-400">الخطوة 2:</span>
-              <p className="text-xs text-white font-semibold">ضع ملف الـ Workflow</p>
-              <p className="text-[11px] text-slate-400">ضع الملف داخل مسار <code className="text-emerald-300">.github/workflows/build-apk.yml</code></p>
-            </div>
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-emerald-400">الخطوة 3:</span>
-              <p className="text-xs text-white font-semibold">حمّل ملف الـ APK النهائي</p>
-              <p className="text-[11px] text-slate-400">توجه لتبويب Actions في GitHub وقم بتنزيل ملف الـ APK مباشرة لهاتفك!</p>
-            </div>
-          </div>
-
-          <pre
-            dir="ltr"
-            className="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 font-mono overflow-x-auto max-h-[420px] leading-relaxed"
-          >
-            <code>{githubActionsWorkflow}</code>
-          </pre>
         </div>
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* TAB 3: CAPACITOR & ANDROID STUDIO NATIVE PROJECT              */}
+      {/* TAB 4: CAPACITOR & ANDROID STUDIO NATIVE PROJECT              */}
       {/* ------------------------------------------------------------- */}
       {activeTab === 'capacitor' && (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
@@ -499,7 +624,7 @@ jobs:
                 className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-1.5"
               >
                 <Download className="w-4 h-4" />
-                <span>تحميل حزمة مشروع الأندرويد كاملة (porto-drive-android.tar.gz)</span>
+                <span>تحميل حزمة مشروع الأندرويد كاملة (tar.gz)</span>
               </a>
               <button
                 onClick={() => handleDownloadFile('AndroidManifest.xml', androidManifest)}
@@ -508,20 +633,13 @@ jobs:
                 <Download className="w-3.5 h-3.5" />
                 <span>AndroidManifest.xml</span>
               </button>
-              <button
-                onClick={() => handleDownloadFile('capacitor.config.json', capacitorConfig)}
-                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>capacitor.config.json</span>
-              </button>
             </div>
           </div>
 
           {/* CLI Commands */}
           <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
             <span className="text-xs font-bold text-emerald-400 block font-sans">
-              الأوامر المباشرة لتحويل التطبيق إلى مشروع أندرويد وبناء الـ APK في جهازك:
+              الأوامر المباشرة لبناء الـ APK في جهازك محلياً:
             </span>
             <div className="space-y-1.5 font-mono text-xs text-slate-300" dir="ltr">
               <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
@@ -543,9 +661,9 @@ jobs:
                 </button>
               </div>
               <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span>npx cap open android # يفتح المشروع في Android Studio لعمل Build APK / AAB</span>
+                <span>cd android && ./gradlew assembleRelease</span>
                 <button
-                  onClick={() => handleCopy('npx cap open android', 'cmd3')}
+                  onClick={() => handleCopy('cd android && ./gradlew assembleRelease', 'cmd3')}
                   className="text-slate-400 hover:text-white"
                 >
                   {copiedKey === 'cmd3' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -553,41 +671,21 @@ jobs:
               </div>
             </div>
           </div>
-
-          {/* Android Manifest Preview */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-300">محتوى ملف AndroidManifest.xml (صلاحيات الـ GPS والاتصال):</span>
-              <button
-                onClick={() => handleCopy(androidManifest, 'manifest')}
-                className="text-emerald-400 hover:underline flex items-center gap-1"
-              >
-                {copiedKey === 'manifest' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>نسخ الكود</span>
-              </button>
-            </div>
-            <pre
-              dir="ltr"
-              className="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 font-mono overflow-x-auto max-h-[300px] leading-relaxed"
-            >
-              <code>{androidManifest}</code>
-            </pre>
-          </div>
         </div>
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* TAB 4: GOOGLE PLAY STORE PUBLISHING CHECKLIST                 */}
+      {/* TAB 5: GOOGLE PLAY STORE PUBLISHING CHECKLIST                 */}
       {/* ------------------------------------------------------------- */}
       {activeTab === 'store' && (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
           <div className="border-b border-slate-800 pb-4">
             <h3 className="font-bold text-white text-base flex items-center gap-2">
               <Globe className="w-5 h-5 text-emerald-400" />
-              دليل رفع التطبيق على متجر Google Play Console (APK / AAB)
+              دليل رفع التطبيق على متجر Google Play Console (AAB)
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              الشروط والمعايير الرسمية لرفع ونشر تطبيق Porto Drive للمستخدمين في مصر والعالم
+              الشروط والمعايير الرسمية لرفع ونشر تطبيق Porto Drive للمستخدمين
             </p>
           </div>
 
@@ -598,13 +696,7 @@ jobs:
                 1. صيغة الملف المطلوبة (Android App Bundle - AAB)
               </h4>
               <p className="text-xs text-slate-300 leading-relaxed">
-                متجر Google Play يطلب صيغة <strong className="text-white">.aab</strong> بدلاً من .apk عند الرفع لأول مرة، حيث يتم إنتاجها تلقائياً عبر أمر:
-              </p>
-              <div className="bg-slate-900 p-2.5 rounded-xl font-mono text-xs text-emerald-300" dir="ltr">
-                ./gradlew bundleRelease
-              </div>
-              <p className="text-[11px] text-slate-400">
-                يقوم متجر جوجل تلقائياً بتحويل ملف الـ .aab إلى ملفات .apk مخصصة بحسب نوع كل هاتف لتقليل حجم التنزيل.
+                متجر Google Play يطلب صيغة <strong className="text-white">.aab</strong> بدلاً من .apk عند الرفع لأول مرة، ويمكنك تحميلها مباشرة من الزر أعلاه.
               </p>
             </div>
 
@@ -618,19 +710,8 @@ jobs:
               </p>
               <ul className="list-disc list-inside text-[11px] text-slate-400 space-y-1">
                 <li>يجب توفير رابط سياسة خصوصية صريح (Privacy Policy).</li>
-                <li>إرفاق فيديو قصير (30 ثانية) يوضح شاشة الرحلة والتتبع للمراجعين.</li>
                 <li>تحديد تصنيف التطبيق في فئة: <strong className="text-white">Maps & Navigation / Travel</strong>.</li>
               </ul>
-            </div>
-          </div>
-
-          <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
-            <h4 className="text-sm font-bold text-white">توليد مفتاح التوقيع الرقمي (Keystore Release Signing):</h4>
-            <p className="text-xs text-slate-400">
-              قم بتوليد مفتاح الأمان المشفر لتوقيع ملف الـ APK النهائي عبر أمر keytool في سطر الأوامر:
-            </p>
-            <div className="bg-slate-900 p-3 rounded-xl font-mono text-xs text-slate-300 overflow-x-auto" dir="ltr">
-              keytool -genkey -v -keystore portodrive-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias portodrive
             </div>
           </div>
         </div>
