@@ -1,0 +1,6 @@
+{
+  "appId": "com.portodrive.app",
+  "appName": "Porto Drive",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

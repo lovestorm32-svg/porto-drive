@@ -1,0 +1,35 @@
+{
+  "id": "/",
+  "name": "Porto Drive - بورتو درايف",
+  "short_name": "PortoDrive",
+  "description": "منصة النقل الذكي والتفاوض المباشر على الأسعار مع 5 كباتن بالجنيه المصري",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#10b981",
+  "dir": "rtl",
+  "lang": "ar",
+  "categories": ["travel", "navigation", "transportation"],
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=192&h=192&q=80",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=512&h=512&q=80",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=512&h=512&q=80",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

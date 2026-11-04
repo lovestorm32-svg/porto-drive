@@ -1,0 +1,6 @@
+{
+  "name": "SmartRide - منصة النقل الذكي الشاملة",
+  "description": "منصة نقل ذكي متكاملة (أوبر وكريم) تضم تطبيق الراكب، تطبيق السائق، ولوحة التحكم الإدارية مع تتبع حي ونظام تسعير وهيكل قواعد بيانات.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
